@@ -39,6 +39,12 @@ void UGoLWidgetMainGrid::OnPressCreateGrid()
 		return;
 	}
 
+	bIsPlaying = false;
+	if (IsValid(PlayStopText))
+	{
+		PlayStopText->SetText(FText::FromString(TEXT("Play")))	;
+	}
+	
 	// Clear old cells
 	for (UGoLWidgetCell* Cell : Cells)
 	{
@@ -109,11 +115,12 @@ void UGoLWidgetMainGrid::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 		return;
 	}
 
-	AccumulatedTime = InDeltaTime;
+	AccumulatedTime += InDeltaTime;
 	if (AccumulatedTime < 1.f / Speed)
 	{
 		return;
 	}
+	AccumulatedTime = 0.f;
 
 	ExecutePass();
 	UpdateCellsState();
@@ -121,7 +128,74 @@ void UGoLWidgetMainGrid::NativeTick(const FGeometry& MyGeometry, float InDeltaTi
 
 void UGoLWidgetMainGrid::ExecutePass()
 {
-	// TODO
+	// Una celula viva:
+	//	- Pasará a la siguiente generación si tiene entre 2 y 3 vecinos vivos
+	// Una celula muerta:
+	//	- Revivirá en la siguiente generación si tiene 3 vecinos vivos
+
+	for (int X = 0; X < Size; X++)
+	{
+		for (int Y = 0; Y < Size; Y++)
+		{
+			const FIntVector2 CellPosition(X, Y);
+			UGoLWidgetCell* Cell = GetCellFromLineColumn(CellPosition);
+			const bool bIsAlive = Cell->IsOn();
+			const int NumLiveNeighbours = GetNumLiveNeighbours(CellPosition);
+
+			const bool bNewValue = (bIsAlive && (NumLiveNeighbours == 2 || NumLiveNeighbours == 3)) ||
+								   (!bIsAlive && NumLiveNeighbours == 3);
+			Cell->SetNewValue(bNewValue);
+		}
+	}	
+}
+
+int UGoLWidgetMainGrid::GetNumLiveNeighbours(const FIntVector2& CellPosition) const
+{
+	int NumLiveNeighbours = 0;
+	for (int X = -1; X <= 1; ++X)
+	{
+		for (int Y = -1; Y <= 1; ++Y)
+		{
+			if (X == 0 && Y == 0)
+			{
+				// Somos nosotros, no hace nada
+				continue;
+			}
+
+			FIntVector2 NeighbourCellPosition = CellPosition + FIntVector2(X, Y);
+			// Límites
+#if 1
+			if (NeighbourCellPosition.X < 0)
+			{
+				NeighbourCellPosition.X = Size - 1;
+			}
+			else if (NeighbourCellPosition.X >= Size)
+			{
+				NeighbourCellPosition.X = 0;
+			}
+
+			if (NeighbourCellPosition.Y < 0)
+			{
+				NeighbourCellPosition.Y = Size - 1;
+			}
+			else if (NeighbourCellPosition.Y >= Size)
+			{
+				NeighbourCellPosition.Y = 0;
+			}
+#else
+			if (NeighbourCellPosition.X < 0 || NeighbourCellPosition.X >= Size ||
+				NeighbourCellPosition.Y < 0 || NeighbourCellPosition.Y >= Size)
+			{
+				// Fuera de límites
+				continue;
+			}
+#endif
+
+			NumLiveNeighbours += GetCellFromLineColumn(NeighbourCellPosition)->IsOn() ? 1 : 0;
+		}		
+	}
+
+	return NumLiveNeighbours;
 }
 
 void UGoLWidgetMainGrid::UpdateCellsState()
@@ -135,10 +209,9 @@ void UGoLWidgetMainGrid::UpdateCellsState()
 	}
 }
 
-UGoLWidgetCell* UGoLWidgetMainGrid::GetCellFromLineColumn(const FIntVector2& LineColumn)
+UGoLWidgetCell* UGoLWidgetMainGrid::GetCellFromLineColumn(const FIntVector2& LineColumn) const
 {
-	// TODO
-	int32 Index = 0;
+	int32 Index = LineColumn.X + LineColumn.Y * Size;
 
 	return Cells.IsValidIndex(Index) ? Cells[Index] : nullptr;
 }

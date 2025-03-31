@@ -29,7 +29,8 @@ protected:
 	void ExecutePass();
 	void UpdateCellsState();
 
-	UGoLWidgetCell* GetCellFromLineColumn(const FIntVector2& LineColumn);
+	int GetNumLiveNeighbours(const FIntVector2& CellPosition) const;
+	UGoLWidgetCell* GetCellFromLineColumn(const FIntVector2& LineColumn) const;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TSubclassOf<UGoLWidgetCell> WidgetCellClass;
