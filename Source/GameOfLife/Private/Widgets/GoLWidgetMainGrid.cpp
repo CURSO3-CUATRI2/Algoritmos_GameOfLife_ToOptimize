@@ -93,6 +93,8 @@ void UGoLWidgetMainGrid::OnPressFillRandomly()
 
 void UGoLWidgetMainGrid::OnPressPlayStop()
 {
+	TRACE_BOOKMARK(TEXT("OnPressPlayStop"));
+
 	bIsPlaying = !bIsPlaying;
 	if (IsValid(PlayStopText))
 	{
@@ -102,6 +104,8 @@ void UGoLWidgetMainGrid::OnPressPlayStop()
 
 void UGoLWidgetMainGrid::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UGoLWidgetMainGrid::NativeTick);
+
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
 	if (!bIsPlaying || Cells.IsEmpty())
@@ -133,9 +137,11 @@ void UGoLWidgetMainGrid::ExecutePass()
 	// Una celula muerta:
 	//	- Revivirá en la siguiente generación si tiene 3 vecinos vivos
 
-	for (int X = 0; X < Size; X++)
+	TRACE_CPUPROFILER_EVENT_SCOPE(UGoLWidgetMainGrid::ExecutePass);
+
+	for (int Y = 0; Y < Size; Y++)
 	{
-		for (int Y = 0; Y < Size; Y++)
+		for (int X = 0; X < Size; X++)
 		{
 			const FIntVector2 CellPosition(X, Y);
 			UGoLWidgetCell* Cell = GetCellFromLineColumn(CellPosition);
@@ -200,6 +206,8 @@ int UGoLWidgetMainGrid::GetNumLiveNeighbours(const FIntVector2& CellPosition) co
 
 void UGoLWidgetMainGrid::UpdateCellsState()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UGoLWidgetMainGrid::UpdateCellsState);
+
 	for (UGoLWidgetCell* Cell : Cells)
 	{
 		if (IsValid(Cell))
